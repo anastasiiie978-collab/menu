@@ -20,7 +20,35 @@ function resolveSupabaseHostname(): string {
   }
 }
 
+// Content-Security-Policy. Scoped as tightly as an App Router app allows:
+//   - script/style keep 'unsafe-inline' because Next injects inline hydration
+//     scripts and inlines critical CSS; a nonce-based policy would need
+//     per-request middleware wiring. XSS surface here is minimal anyway — all
+//     dynamic text is React-escaped and nothing renders raw HTML.
+//   - fonts are self-hosted by next/font at build time, so font-src is 'self'.
+//   - img/connect are limited to self + the Supabase project (dish photos and,
+//     defensively, any client call). data: covers the QR/inline SVGs.
+//   - frame-ancestors 'none' + object-src 'none' + base-uri/form-action 'self'
+//     close clickjacking, plugin, and base-tag/exfil-form vectors.
+function contentSecurityPolicy(): string {
+  const supabase = `https://${resolveSupabaseHostname()}`;
+  return [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: " + supabase,
+    "font-src 'self'",
+    "connect-src 'self' " + supabase,
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'",
+    "upgrade-insecure-requests",
+  ].join("; ");
+}
+
 const securityHeaders = [
+  { key: "Content-Security-Policy", value: contentSecurityPolicy() },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },

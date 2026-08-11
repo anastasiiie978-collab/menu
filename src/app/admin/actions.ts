@@ -14,6 +14,7 @@ import {
   getDishById,
 } from "@/lib/dishes";
 import { saveUploadedPhoto, UploadError } from "@/lib/upload";
+import { checkLoginRateLimit, getClientFingerprint, recordLoginAttempt } from "@/lib/rateLimit";
 
 export type FormState = { error?: string } | undefined;
 
@@ -26,11 +27,28 @@ export async function loginAction(
   _prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
+  const fingerprint = await getClientFingerprint();
+
+  // Checked before the password is even compared, so a locked-out client can't
+  // keep burning guesses (and can't use response timing to probe validity).
+  const verdict = await checkLoginRateLimit(fingerprint);
+  if (!verdict.allowed) {
+    if (verdict.reason === "unavailable") {
+      return { error: "Tizimda vaqtincha nosozlik. Birozdan keyin urinib ko'ring" };
+    }
+    return {
+      error: `Juda ko'p urinish. ${verdict.retryAfterMinutes} daqiqadan keyin qayta urinib ko'ring`,
+    };
+  }
+
   const password = String(formData.get("password") ?? "");
   const valid = await checkAdminPassword(password);
+  await recordLoginAttempt(fingerprint, valid);
+
   if (!valid) {
     return { error: "Noto'g'ri parol" };
   }
+
   await createAdminSession();
   redirect("/admin/dashboard");
 }
