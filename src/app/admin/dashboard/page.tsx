@@ -9,8 +9,10 @@ import { DeleteCategoryButton } from "@/components/admin/DeleteCategoryButton";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminDashboardPage() {
+export default async function AdminDashboardPage(props: PageProps<"/admin/dashboard">) {
   const { categories, dishes } = await getMenu();
+  const { error } = await props.searchParams;
+  const errorMessage = Array.isArray(error) ? error[0] : error;
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-8 sm:px-6">
@@ -28,6 +30,12 @@ export default async function AdminDashboardPage() {
           </button>
         </form>
       </div>
+
+      {errorMessage && (
+        <div className="mt-4 rounded-lg border border-red-400/40 bg-red-400/10 px-4 py-3 text-sm text-red-400">
+          {errorMessage}
+        </div>
+      )}
 
       <section className="mt-8 rounded-lg border border-panel-2 bg-surface p-4">
         <h2 className="mb-3 font-heading text-sm tracking-wide text-cream">Toifalar</h2>
@@ -78,46 +86,50 @@ export default async function AdminDashboardPage() {
                 {categoryDishes.map((dish) => (
                   <div
                     key={dish.id}
-                    className="flex items-center gap-3 rounded-lg border border-panel-2 bg-surface p-3"
+                    className="flex flex-col gap-3 rounded-lg border border-panel-2 bg-surface p-3 sm:flex-row sm:items-center"
                   >
-                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md bg-panel-2">
-                      {dish.photoUrl && (
-                        <Image
-                          src={dish.photoUrl}
-                          alt={dish.name}
-                          fill
-                          sizes="56px"
-                          className="object-cover"
-                        />
-                      )}
+                    <div className="flex min-w-0 items-center gap-3 sm:flex-1">
+                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md bg-panel-2">
+                        {dish.photoUrl && (
+                          <Image
+                            src={dish.photoUrl}
+                            alt={dish.name}
+                            fill
+                            sizes="56px"
+                            className="object-cover"
+                          />
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-heading text-sm text-cream">{dish.name}</p>
+                        <p className="text-xs text-muted">
+                          {formatSom(dish.price)}
+                          {dish.priceUnit && ` / ${dish.priceUnit}`}
+                          {dish.soldOut && <span className="ml-2 text-gold-light">Tugadi</span>}
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-heading text-sm text-cream">{dish.name}</p>
-                      <p className="text-xs text-muted">
-                        {formatSom(dish.price)}
-                        {dish.priceUnit && ` / ${dish.priceUnit}`}
-                        {dish.soldOut && <span className="ml-2 text-gold-light">Tugadi</span>}
-                      </p>
-                    </div>
+                    <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                      <form action={toggleSoldOutAction.bind(null, dish.id)}>
+                        <button
+                          type="submit"
+                          className="min-h-11 rounded-md border border-panel-2 px-3 text-xs text-muted"
+                        >
+                          {dish.soldOut ? "Qaytarish" : "Tugadi"}
+                        </button>
+                      </form>
 
-                    <form action={toggleSoldOutAction.bind(null, dish.id, dish.soldOut)}>
-                      <button
-                        type="submit"
-                        className="min-h-11 rounded-md border border-panel-2 px-3 text-xs text-muted"
+                      <Link
+                        href={`/admin/dashboard/${dish.id}/edit`}
+                        className="flex min-h-11 items-center rounded-md border border-panel-2 px-3 text-xs text-cream"
                       >
-                        {dish.soldOut ? "Qaytarish" : "Tugadi"}
-                      </button>
-                    </form>
+                        Tahrirlash
+                      </Link>
 
-                    <Link
-                      href={`/admin/dashboard/${dish.id}/edit`}
-                      className="flex min-h-11 items-center rounded-md border border-panel-2 px-3 text-xs text-cream"
-                    >
-                      Tahrirlash
-                    </Link>
-
-                    <DeleteDishButton dishId={dish.id} dishName={dish.name} />
+                      <DeleteDishButton dishId={dish.id} dishName={dish.name} />
+                    </div>
                   </div>
                 ))}
 

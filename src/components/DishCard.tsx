@@ -19,7 +19,7 @@ export function DishCard({
           src={dish.photoUrl}
           alt={dish.name}
           fill
-          priority={priority}
+          preload={priority}
           sizes="80px"
           className={`object-cover ${dish.soldOut ? "opacity-40 grayscale" : ""}`}
         />
@@ -43,7 +43,11 @@ export function DishCard({
           src={dish.photoUrl}
           alt={dish.name}
           fill
-          priority={priority}
+          // Not preloaded: this variant is hidden on mobile (~99% of traffic) via `hidden sm:flex`.
+          // Preloading it there would fetch a second, larger image nobody sees. `fetchPriority`
+          // only raises priority once the browser actually decides to fetch it (i.e. on desktop,
+          // where it's visible and above the fold), without forcing an eager/blocking fetch on mobile.
+          fetchPriority={priority ? "high" : undefined}
           sizes="(min-width: 640px) 40vw, 100vw"
           className={`object-cover ${dish.soldOut ? "opacity-40 grayscale" : ""}`}
         />
@@ -63,9 +67,9 @@ export function DishCard({
   const content = (
     <>
       {/* Mobile: compact row so several dishes fit on one screen without scrolling */}
-      <div className={`flex gap-3 sm:hidden ${dish.soldOut ? "opacity-60" : ""}`}>
+      <div className="flex gap-3 sm:hidden">
         {mobilePhoto}
-        <div className="min-w-0 flex-1">
+        <div className={`min-w-0 flex-1 ${dish.soldOut ? "opacity-60" : ""}`}>
           <h3 className="truncate font-heading text-sm tracking-wide text-cream">{dish.name}</h3>
           {dish.description && (
             <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-muted">{dish.description}</p>

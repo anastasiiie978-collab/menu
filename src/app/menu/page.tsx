@@ -18,11 +18,12 @@ export default async function MenuPage() {
   let menu;
   try {
     menu = await getMenu();
-  } catch {
+  } catch (error) {
+    console.error("Failed to load menu:", error);
     menu = null;
   }
 
-  if (!menu || menu.categories.length === 0) {
+  if (!menu || menu.categories.length === 0 || menu.dishes.length === 0) {
     return (
       <main className="flex min-h-dvh flex-1 flex-col items-center justify-center px-6 text-center">
         <p className="font-heading text-lg text-gold-light">Menyu vaqtincha ochilmayapti</p>
@@ -35,6 +36,12 @@ export default async function MenuPage() {
   }
 
   const { categories, dishes } = menu;
+  // Categories with no dishes never render a <section>, so their nav pill would
+  // link to an anchor that doesn't exist on the page. Keep the nav in sync with
+  // what's actually rendered below.
+  const categoriesWithDishes = categories.filter((category) =>
+    dishes.some((d) => d.categoryId === category.id)
+  );
 
   return (
     <main className="flex flex-1 flex-col pb-16">
@@ -43,7 +50,7 @@ export default async function MenuPage() {
         <h1 className="mt-2 font-display text-3xl italic text-gold-light">To&apos;liq menyu</h1>
       </header>
 
-      <CategoryNav categories={categories} />
+      <CategoryNav categories={categoriesWithDishes} />
 
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pt-8 sm:gap-12 sm:px-6">
         {categories.map((category) => {
@@ -61,7 +68,7 @@ export default async function MenuPage() {
                     key={dish.id}
                     dish={dish}
                     reversed={index % 2 === 1}
-                    priority={category.sortOrder === 1 && index === 0}
+                    priority={categoriesWithDishes[0]?.id === category.id && index === 0}
                   />
                 ))}
               </div>

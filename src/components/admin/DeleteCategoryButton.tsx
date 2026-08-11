@@ -28,7 +28,7 @@ export function DeleteCategoryButton({
     >
       <button
         type="submit"
-        className="min-h-9 shrink-0 rounded-md border border-panel-2 px-3 text-xs text-red-400"
+        className="min-h-11 shrink-0 rounded-md border border-panel-2 px-3 text-xs text-red-400"
       >
         O&apos;chirish
       </button>

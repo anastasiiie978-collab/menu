@@ -58,6 +58,7 @@ export function CategoryNav({ categories }: { categories: Category[] }) {
                 pillRefs.current[category.slug] = el;
               }}
               href={`#${category.slug}`}
+              aria-current={isActive ? "true" : undefined}
               className={`flex min-h-11 shrink-0 items-center rounded-full border px-4 font-heading text-xs tracking-wide transition-colors ${
                 isActive
                   ? "border-gold text-gold-light"

@@ -9,7 +9,10 @@
   --color-gold-light: #e0c485;
   --color-cream: #f2ede4;
   --color-muted: #9a938a;
-  --color-muted-2: #807a72;
+  /* Nudged up from #807a72, which measured 4.41:1 on the canvas — just under
+     WCAG AA's 4.5:1. This is 4.7:1 and visually near-identical, but readable
+     for older customers in dim restaurant lighting. */
+  --color-muted-2: #857f76;
 
   --font-heading: var(--font-oswald);
   --font-body: var(--font-jost);
@@ -33,6 +36,26 @@ body {
   background-color: var(--color-canvas);
   color: var(--color-cream);
   font-family: var(--font-body), sans-serif;
+}
+
+/* Category nav pills link to in-page anchors (#slug); without this they jump
+   instantly while the "back to top" button scrolls smoothly, which reads as
+   inconsistent. Gated on the user's motion preference like everything else here. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Visible keyboard-focus ring in the site's gold accent. The dark theme has no
+   custom focus style anywhere, so keyboard/switch-device users only get the
+   browser default (inconsistent across browsers, sometimes low-contrast on
+   near-black surfaces). This only triggers on :focus-visible, so mouse/touch
+   taps are unaffected. */
+:focus-visible {
+  outline: 2px solid var(--color-gold-light);
+  outline-offset: 3px;
+  border-radius: 2px;
 }
 
 .reveal-hidden {

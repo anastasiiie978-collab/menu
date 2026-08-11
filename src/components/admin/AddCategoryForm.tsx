@@ -13,6 +13,7 @@ export function AddCategoryForm() {
           name="name"
           placeholder="Yangi toifa nomi"
           required
+          maxLength={100}
           className="min-h-11 flex-1 rounded-md border border-panel-2 bg-surface px-3 text-sm text-cream outline-none focus:border-gold"
         />
         <button

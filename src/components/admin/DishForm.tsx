@@ -28,6 +28,7 @@ export function DishForm({
           name="name"
           defaultValue={dish?.name}
           required
+          maxLength={100}
           className="min-h-14 rounded-lg border border-panel-2 bg-surface px-4 text-base text-cream outline-none focus:border-gold"
         />
       </label>
@@ -64,7 +65,8 @@ export function DishForm({
           <input
             type="number"
             name="price"
-            min={0}
+            min={1}
+            max={50000000}
             step={1}
             defaultValue={dish?.price}
             required

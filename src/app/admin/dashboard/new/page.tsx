@@ -16,7 +16,19 @@ export default async function NewDishPage() {
         &larr; Orqaga
       </Link>
       <h1 className="mb-6 font-heading text-xl text-gold-light">Yangi taom qo&apos;shish</h1>
-      <DishForm categories={categories} action={createDishAction} submitLabel="Qo'shish" />
+      {categories.length === 0 ? (
+        <div className="rounded-lg border border-panel-2 bg-surface p-4 text-sm text-muted">
+          <p>Taom qo&apos;shishdan oldin kamida bitta toifa yarating.</p>
+          <Link
+            href="/admin/dashboard"
+            className="mt-4 flex min-h-11 items-center justify-center rounded-md bg-gold px-4 font-heading text-xs tracking-wide text-canvas"
+          >
+            Toifalar bo&apos;limiga qaytish
+          </Link>
+        </div>
+      ) : (
+        <DishForm categories={categories} action={createDishAction} submitLabel="Qo'shish" />
+      )}
     </main>
   );
 }
