@@ -19,11 +19,25 @@
   --font-display: var(--font-cormorant);
 
   --animate-reveal: reveal 0.7s ease-out forwards;
+  --animate-sheet-in: sheet-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 
   @keyframes reveal {
     from {
       opacity: 0;
       transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Dish detail sheet: rises from below like a native sheet rather than
+     appearing abruptly. Overridden by the reduced-motion block below. */
+  @keyframes sheet-in {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
     }
     to {
       opacity: 1;

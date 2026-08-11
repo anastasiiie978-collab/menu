@@ -16,6 +16,16 @@ export default async function AdminDashboardPage(props: PageProps<"/admin/dashbo
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-8 sm:px-6">
+      <Link
+        href="/"
+        className="-ml-2 mb-4 inline-flex min-h-11 w-fit items-center gap-2 rounded-md px-2 text-sm text-muted"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+          <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        Bosh sahifa
+      </Link>
+
       <div className="flex items-center justify-between">
         <div>
           <p className="font-heading text-xs tracking-[0.35em] text-muted">SUHBAT</p>
@@ -117,7 +127,7 @@ export default async function AdminDashboardPage(props: PageProps<"/admin/dashbo
                           type="submit"
                           className="min-h-11 rounded-md border border-panel-2 px-3 text-xs text-muted"
                         >
-                          {dish.soldOut ? "Qaytarish" : "Tugadi"}
+                          {dish.soldOut ? "Mavjud" : "Tugadi"}
                         </button>
                       </form>
 

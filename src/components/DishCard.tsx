@@ -1,23 +1,31 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import { formatSom } from "@/lib/format";
 import { RevealOnScroll } from "@/components/RevealOnScroll";
+import { DishDetail } from "@/components/DishDetail";
 import type { Dish } from "@/lib/types";
 
 export function DishCard({
   dish,
+  categoryName,
   reversed,
   priority = false,
 }: {
   dish: Dish;
+  categoryName?: string;
   reversed: boolean;
   priority?: boolean;
 }) {
+  const [detailOpen, setDetailOpen] = useState(false);
+
   const mobilePhoto = (
     <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-panel-2">
       {dish.photoUrl ? (
         <Image
           src={dish.photoUrl}
-          alt={dish.name}
+          alt=""
           fill
           preload={priority}
           sizes="80px"
@@ -41,7 +49,7 @@ export function DishCard({
       {dish.photoUrl ? (
         <Image
           src={dish.photoUrl}
-          alt={dish.name}
+          alt=""
           fill
           // Not preloaded: this variant is hidden on mobile (~99% of traffic) via `hidden sm:flex`.
           // Preloading it there would fetch a second, larger image nobody sees. `fetchPriority`
@@ -65,7 +73,9 @@ export function DishCard({
   );
 
   const content = (
-    <>
+    // The overlay button below covers this card, so the photos use alt="" and the
+    // button carries the accessible name — otherwise every dish is announced twice.
+    <div className="relative">
       {/* Mobile: compact row so several dishes fit on one screen without scrolling */}
       <div className="flex gap-3 sm:hidden">
         {mobilePhoto}
@@ -81,7 +91,7 @@ export function DishCard({
         </div>
       </div>
 
-      {/* Desktop: full alternating hero layout, unchanged */}
+      {/* Desktop: full alternating hero layout */}
       <div
         className={`hidden sm:flex sm:items-center sm:gap-6 ${
           reversed ? "sm:flex-row-reverse" : "sm:flex-row"
@@ -99,12 +109,28 @@ export function DishCard({
           </p>
         </div>
       </div>
-    </>
+
+      {/* Stretched overlay rather than wrapping the card in a <button>: a heading
+          is not valid inside button content, and this keeps one clean tap target. */}
+      <button
+        type="button"
+        onClick={() => setDetailOpen(true)}
+        aria-label={`${dish.name} — batafsil ko'rish`}
+        className="absolute inset-0 -m-1 rounded-xl"
+      />
+    </div>
   );
 
-  if (priority) {
-    return <div>{content}</div>;
-  }
-
-  return <RevealOnScroll>{content}</RevealOnScroll>;
+  return (
+    <>
+      {priority ? content : <RevealOnScroll>{content}</RevealOnScroll>}
+      {detailOpen && (
+        <DishDetail
+          dish={dish}
+          categoryName={categoryName}
+          onClose={() => setDetailOpen(false)}
+        />
+      )}
+    </>
+  );
 }

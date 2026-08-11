@@ -67,6 +67,7 @@ export default async function MenuPage() {
                   <DishCard
                     key={dish.id}
                     dish={dish}
+                    categoryName={category.name}
                     reversed={index % 2 === 1}
                     priority={categoriesWithDishes[0]?.id === category.id && index === 0}
                   />
