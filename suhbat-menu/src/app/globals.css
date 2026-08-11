@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #121212;
+  --color-surface: #1a1a1a;
+  --color-panel: #2c2c2c;
+  --color-panel-2: #3a3a3a;
+  --color-gold: #c8a24a;
+  --color-gold-light: #e0c485;
+  --color-cream: #f2ede4;
+  --color-muted: #9a938a;
+  --color-muted-2: #807a72;
+
+  --font-heading: var(--font-oswald);
+  --font-body: var(--font-jost);
+  --font-display: var(--font-cormorant);
+
+  --animate-reveal: reveal 0.7s ease-out forwards;
+
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-cream);
+  font-family: var(--font-body), sans-serif;
+}
+
+.reveal-hidden {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-hidden {
+    opacity: 1;
+  }
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
