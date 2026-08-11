@@ -4,6 +4,10 @@ import { getCategories, getDishById } from "@/lib/dishes";
 import { DishForm } from "@/components/admin/DishForm";
 import { updateDishAction } from "@/app/admin/actions";
 
+// Same reason as the "new dish" page: the Toifa dropdown must reflect categories
+// added since the last build.
+export const dynamic = "force-dynamic";
+
 export default async function EditDishPage(props: PageProps<"/admin/dashboard/[id]/edit">) {
   const { id } = await props.params;
   const [categories, dish] = await Promise.all([getCategories(), getDishById(id)]);

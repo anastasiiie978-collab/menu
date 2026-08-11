@@ -3,6 +3,10 @@ import { getCategories } from "@/lib/dishes";
 import { DishForm } from "@/components/admin/DishForm";
 import { createDishAction } from "@/app/admin/actions";
 
+// Categories are admin-editable, so this page must never be prerendered at build
+// time — otherwise a newly added category is missing from the Toifa dropdown.
+export const dynamic = "force-dynamic";
+
 export default async function NewDishPage() {
   const categories = await getCategories();
 
