@@ -1,6 +1,8 @@
 // One-time migration: pushes data/dishes.json + local /public/uploads/dishes photos
-// into the Supabase project. Safe to re-run (skips categories/dishes that already
-// exist by slug/name, and skips photo uploads that already exist in the bucket).
+// into the Supabase project. Safe to re-run: categories are skipped if a row with
+// the same slug already exists, dishes are skipped if a row with the same
+// (category, name) already exists, and photos are re-uploaded with upsert so a
+// partial/failed previous run self-heals instead of erroring on "already exists".
 //
 // Run with: node --env-file=.env.local scripts/migrate-to-supabase.mjs
 import { readFile } from "node:fs/promises";
@@ -50,10 +52,31 @@ for (const category of categories) {
 
 let uploaded = 0;
 let inserted = 0;
+let skipped = 0;
 let failed = 0;
 
 for (const dish of dishes) {
   try {
+    const categoryId = categoryIdMap.get(dish.categoryId);
+    if (!categoryId) throw new Error(`no mapped category for categoryId "${dish.categoryId}"`);
+
+    // Dishes have no unique slug like categories do, so re-running this
+    // script previously duplicated every dish on each run despite the
+    // header comment claiming otherwise. Treat (category, name) as the
+    // natural key for "already migrated".
+    const { data: existingDish, error: lookupError } = await supabase
+      .from("dishes")
+      .select("id")
+      .eq("category_id", categoryId)
+      .eq("name", dish.name)
+      .maybeSingle();
+    if (lookupError) throw new Error(`lookup: ${lookupError.message}`);
+    if (existingDish) {
+      skipped += 1;
+      console.log(`  dish "${dish.name}" already exists, skipping`);
+      continue;
+    }
+
     let photoUrl = null;
     if (dish.photoUrl) {
       const filename = path.basename(dish.photoUrl);
@@ -70,9 +93,6 @@ for (const dish of dishes) {
       photoUrl = supabase.storage.from(BUCKET).getPublicUrl(filename).data.publicUrl;
       uploaded += 1;
     }
-
-    const categoryId = categoryIdMap.get(dish.categoryId);
-    if (!categoryId) throw new Error(`no mapped category for categoryId "${dish.categoryId}"`);
 
     const { error: insertError } = await supabase.from("dishes").insert({
       category_id: categoryId,
@@ -94,5 +114,5 @@ for (const dish of dishes) {
   }
 }
 
-console.log(`\nDone. ${inserted} dishes inserted, ${uploaded} photos uploaded, ${failed} failed.`);
+console.log(`\nDone. ${inserted} dishes inserted, ${skipped} skipped (already existed), ${uploaded} photos uploaded, ${failed} failed.`);
 if (failed > 0) process.exitCode = 1;

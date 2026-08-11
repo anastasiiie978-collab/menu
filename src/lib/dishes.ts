@@ -98,7 +98,11 @@ export async function createDish(input: DishInput): Promise<Dish> {
       category_id: input.categoryId,
       name: input.name,
       description: input.description,
-      price: input.price,
+      // `price` is an integer column (so'm has no subunit in practice); the
+      // action layer only checks Number.isFinite + > 0, so a fractional
+      // value (e.g. from a stray decimal point) would otherwise reach
+      // Postgres and throw "invalid input syntax for type integer".
+      price: Math.round(input.price),
       price_unit: input.priceUnit,
       photo_url: input.photoUrl,
       sold_out: false,
@@ -117,7 +121,7 @@ export async function updateDish(id: string, patch: DishUpdate): Promise<Dish | 
   if (patch.categoryId !== undefined) payload.category_id = patch.categoryId;
   if (patch.name !== undefined) payload.name = patch.name;
   if (patch.description !== undefined) payload.description = patch.description;
-  if (patch.price !== undefined) payload.price = patch.price;
+  if (patch.price !== undefined) payload.price = Math.round(patch.price);
   if (patch.priceUnit !== undefined) payload.price_unit = patch.priceUnit;
   if (patch.photoUrl !== undefined) payload.photo_url = patch.photoUrl;
   if (patch.soldOut !== undefined) payload.sold_out = patch.soldOut;
@@ -140,10 +144,66 @@ export async function deleteDish(id: string): Promise<boolean> {
 
 export type CategoryInput = { name: string };
 
+// Uzbek Latin uses an apostrophe-like modifier for "o'" and "g'" (o'zbek,
+// bog'). People type it with whichever glyph their keyboard produces —
+// straight apostrophe, curly quotes, backtick, or the "proper" Unicode
+// modifier letters (ʻ U+02BB, ʼ U+02BC) — and all of them should elide the
+// same way so the same word always yields the same slug.
+const ELIDABLE_APOSTROPHES = /['`‘’ʻʼ]/g;
+
+// Minimal Cyrillic -> Latin map for the Uzbek alphabet, so a category name
+// typed in Cyrillic still produces a meaningful slug instead of collapsing
+// to nothing (see below). Multi-char digraphs must be listed before their
+// single-char prefixes since we replace on this map in order.
+const CYRILLIC_TO_LATIN: [RegExp, string][] = [
+  [/ц/g, "ts"],
+  [/ё/g, "yo"],
+  [/ю/g, "yu"],
+  [/я/g, "ya"],
+  [/ш/g, "sh"],
+  [/ч/g, "ch"],
+  [/ў/g, "o'"],
+  [/қ/g, "q"],
+  [/ғ/g, "g'"],
+  [/ҳ/g, "h"],
+  [/й/g, "y"],
+  [/а/g, "a"],
+  [/б/g, "b"],
+  [/в/g, "v"],
+  [/г/g, "g"],
+  [/д/g, "d"],
+  [/е/g, "e"],
+  [/ж/g, "j"],
+  [/з/g, "z"],
+  [/и/g, "i"],
+  [/к/g, "k"],
+  [/л/g, "l"],
+  [/м/g, "m"],
+  [/н/g, "n"],
+  [/о/g, "o"],
+  [/п/g, "p"],
+  [/р/g, "r"],
+  [/с/g, "s"],
+  [/т/g, "t"],
+  [/у/g, "u"],
+  [/ф/g, "f"],
+  [/х/g, "x"],
+  [/ъ/g, ""],
+  [/ь/g, ""],
+  [/э/g, "e"],
+];
+
+function cyrillicToLatin(text: string): string {
+  let out = text;
+  for (const [pattern, replacement] of CYRILLIC_TO_LATIN) {
+    out = out.replace(pattern, replacement);
+  }
+  return out;
+}
+
 function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/['‘’]/g, "")
+  return cyrillicToLatin(name.toLowerCase())
+    .replace(ELIDABLE_APOSTROPHES, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
