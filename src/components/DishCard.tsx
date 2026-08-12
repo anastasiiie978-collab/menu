@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import { formatSom } from "@/lib/format";
 import { RevealOnScroll } from "@/components/RevealOnScroll";
@@ -19,18 +19,29 @@ export function DishCard({
   priority?: boolean;
 }) {
   const [detailOpen, setDetailOpen] = useState(false);
+  const [mobileLoaded, setMobileLoaded] = useState(false);
+  const [desktopLoaded, setDesktopLoaded] = useState(false);
+  // Returns focus to the card that opened the sheet once it closes, so
+  // keyboard/screen-reader users land back where they were instead of at the
+  // top of the page.
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const mobilePhoto = (
     <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-panel-2">
       {dish.photoUrl ? (
-        <Image
-          src={dish.photoUrl}
-          alt=""
-          fill
-          preload={priority}
-          sizes="80px"
-          className={`object-cover ${dish.soldOut ? "opacity-40 grayscale" : ""}`}
-        />
+        <>
+          {!mobileLoaded && <div aria-hidden="true" className="shimmer pointer-events-none" />}
+          <Image
+            src={dish.photoUrl}
+            alt=""
+            fill
+            preload={priority}
+            sizes="80px"
+            onLoad={() => setMobileLoaded(true)}
+            onError={() => setMobileLoaded(true)}
+            className={`object-cover ${dish.soldOut ? "opacity-40 grayscale" : ""}`}
+          />
+        </>
       ) : (
         <div className="flex h-full items-center justify-center text-muted-2">
           <span className="font-display text-[10px] italic">Tez orada</span>
@@ -47,18 +58,23 @@ export function DishCard({
   const desktopPhoto = (
     <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-panel-2 sm:w-2/5">
       {dish.photoUrl ? (
-        <Image
-          src={dish.photoUrl}
-          alt=""
-          fill
-          // Not preloaded: this variant is hidden on mobile (~99% of traffic) via `hidden sm:flex`.
-          // Preloading it there would fetch a second, larger image nobody sees. `fetchPriority`
-          // only raises priority once the browser actually decides to fetch it (i.e. on desktop,
-          // where it's visible and above the fold), without forcing an eager/blocking fetch on mobile.
-          fetchPriority={priority ? "high" : undefined}
-          sizes="(min-width: 640px) 40vw, 100vw"
-          className={`object-cover ${dish.soldOut ? "opacity-40 grayscale" : ""}`}
-        />
+        <>
+          {!desktopLoaded && <div aria-hidden="true" className="shimmer pointer-events-none" />}
+          <Image
+            src={dish.photoUrl}
+            alt=""
+            fill
+            // Not preloaded: this variant is hidden on mobile (~99% of traffic) via `hidden sm:flex`.
+            // Preloading it there would fetch a second, larger image nobody sees. `fetchPriority`
+            // only raises priority once the browser actually decides to fetch it (i.e. on desktop,
+            // where it's visible and above the fold), without forcing an eager/blocking fetch on mobile.
+            fetchPriority={priority ? "high" : undefined}
+            sizes="(min-width: 640px) 40vw, 100vw"
+            onLoad={() => setDesktopLoaded(true)}
+            onError={() => setDesktopLoaded(true)}
+            className={`object-cover ${dish.soldOut ? "opacity-40 grayscale" : ""}`}
+          />
+        </>
       ) : (
         <div className="flex h-full items-center justify-center text-muted-2">
           <span className="font-display text-sm italic">Rasm tez orada</span>
@@ -113,6 +129,7 @@ export function DishCard({
       {/* Stretched overlay rather than wrapping the card in a <button>: a heading
           is not valid inside button content, and this keeps one clean tap target. */}
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setDetailOpen(true)}
         aria-label={`${dish.name} — batafsil ko'rish`}
@@ -128,7 +145,16 @@ export function DishCard({
         <DishDetail
           dish={dish}
           categoryName={categoryName}
-          onClose={() => setDetailOpen(false)}
+          onClose={() => {
+            setDetailOpen(false);
+            // Defer the focus to the next frame: closing unmounts DishDetail, and
+            // its cleanup (which removes the `inert` it put on the background,
+            // including this card) only runs during that unmount. Focusing
+            // synchronously here would target a still-inert element and be a
+            // silent no-op, dropping focus to <body>. By rAF time the unmount and
+            // its cleanup have run, so the card can actually take focus.
+            requestAnimationFrame(() => triggerRef.current?.focus());
+          }}
         />
       )}
     </>

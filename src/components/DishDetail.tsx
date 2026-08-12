@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { formatSom } from "@/lib/format";
 import type { Dish } from "@/lib/types";
@@ -14,8 +14,44 @@ export function DishDetail({
   categoryName?: string;
   onClose: () => void;
 }) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const [photoLoaded, setPhotoLoaded] = useState(false);
+
+  // The sheet is rendered inline in the tree (not a portal), so the menu list
+  // behind it shares ancestors with it. A sighted user can't reach that list —
+  // it's fully covered — but a screen reader's swipe navigation isn't blocked
+  // by CSS coverage alone, so without this it can still land on category
+  // links or other dishes behind the sheet. Walk up from the dialog root to
+  // <body>, marking every sibling along the way inert; this never touches the
+  // dialog's own subtree, only what's genuinely outside it. Purely
+  // non-visual, so it has no effect on the ~99% of visitors who aren't using
+  // assistive tech.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+
+    const restore: Array<() => void> = [];
+    let node: HTMLElement = root;
+
+    while (node !== document.body) {
+      const parent: HTMLElement | null = node.parentElement;
+      if (!parent) break;
+      for (const sibling of Array.from(parent.children)) {
+        if (sibling === node || !(sibling instanceof HTMLElement) || sibling.inert) continue;
+        sibling.inert = true;
+        restore.push(() => {
+          sibling.inert = false;
+        });
+      }
+      node = parent;
+    }
+
+    return () => {
+      for (const undo of restore) undo();
+    };
+  }, []);
 
   // Every close path routes through history.back(), and popstate is the single
   // place that actually tears the sheet down. That keeps the Android hardware
@@ -78,6 +114,7 @@ export function DishDetail({
 
   return (
     <div
+      ref={rootRef}
       role="dialog"
       aria-modal="true"
       aria-label={dish.name}
@@ -99,13 +136,18 @@ export function DishDetail({
         <div className="relative">
           <div className="relative aspect-[4/3] w-full bg-panel-2">
             {dish.photoUrl ? (
-              <Image
-                src={dish.photoUrl}
-                alt={dish.name}
-                fill
-                sizes="(min-width: 640px) 512px, 100vw"
-                className={`object-cover ${dish.soldOut ? "opacity-45 grayscale" : ""}`}
-              />
+              <>
+                {!photoLoaded && <div aria-hidden="true" className="shimmer pointer-events-none" />}
+                <Image
+                  src={dish.photoUrl}
+                  alt={dish.name}
+                  fill
+                  sizes="(min-width: 640px) 512px, 100vw"
+                  onLoad={() => setPhotoLoaded(true)}
+                  onError={() => setPhotoLoaded(true)}
+                  className={`object-cover ${dish.soldOut ? "opacity-45 grayscale" : ""}`}
+                />
+              </>
             ) : (
               <div className="flex h-full items-center justify-center text-muted-2">
                 <span className="font-display text-lg italic">Rasm tez orada</span>
