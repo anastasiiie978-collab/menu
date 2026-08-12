@@ -21,6 +21,7 @@ export type FormState = { error?: string } | undefined;
 // Sanity caps — generous enough to never block a real dish/category, tight enough to
 // catch fat-finger typos (an extra zero on the price, a pasted paragraph as a name).
 const MAX_NAME_LENGTH = 100;
+const MAX_DESCRIPTION_LENGTH = 500;
 const MAX_PRICE = 50_000_000;
 
 export async function loginAction(
@@ -77,6 +78,8 @@ export async function createDishAction(
   const { name, description, categoryId, price, priceUnit } = readDishFields(formData);
   if (!name) return { error: "Taom nomini kiriting" };
   if (name.length > MAX_NAME_LENGTH) return { error: `Taom nomi ${MAX_NAME_LENGTH} belgidan oshmasligi kerak` };
+  if (description.length > MAX_DESCRIPTION_LENGTH)
+    return { error: `Tavsif ${MAX_DESCRIPTION_LENGTH} belgidan oshmasligi kerak` };
   if (!categoryId) return { error: "Toifani tanlang" };
   if (!Number.isFinite(price) || price <= 0) return { error: "Narxni to'g'ri kiriting" };
   if (price > MAX_PRICE) return { error: "Narx juda katta ko'rinadi. Qaytadan tekshiring" };
@@ -113,6 +116,8 @@ export async function updateDishAction(
   const { name, description, categoryId, price, priceUnit } = readDishFields(formData);
   if (!name) return { error: "Taom nomini kiriting" };
   if (name.length > MAX_NAME_LENGTH) return { error: `Taom nomi ${MAX_NAME_LENGTH} belgidan oshmasligi kerak` };
+  if (description.length > MAX_DESCRIPTION_LENGTH)
+    return { error: `Tavsif ${MAX_DESCRIPTION_LENGTH} belgidan oshmasligi kerak` };
   if (!categoryId) return { error: "Toifani tanlang" };
   if (!Number.isFinite(price) || price <= 0) return { error: "Narxni to'g'ri kiriting" };
   if (price > MAX_PRICE) return { error: "Narx juda katta ko'rinadi. Qaytadan tekshiring" };

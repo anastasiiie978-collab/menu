@@ -42,8 +42,17 @@ export default async function AdminDashboardPage(props: PageProps<"/admin/dashbo
       </div>
 
       {errorMessage && (
-        <div className="mt-4 rounded-lg border border-red-400/40 bg-red-400/10 px-4 py-3 text-sm text-red-400">
-          {errorMessage}
+        <div className="mt-4 flex items-start justify-between gap-3 rounded-lg border border-red-400/40 bg-red-400/10 px-4 py-3 text-sm text-red-400">
+          <p>{errorMessage}</p>
+          {/* Plain link back to the clean URL — the error lives in ?error= from the
+              redirect after a failed action, so without this it keeps showing on
+              every reload/re-visit until the manager happens to navigate away. */}
+          <Link
+            href="/admin/dashboard"
+            className="flex min-h-11 shrink-0 items-center px-1 text-xs text-red-300 underline underline-offset-4"
+          >
+            Yopish
+          </Link>
         </div>
       )}
 

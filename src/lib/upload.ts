@@ -49,7 +49,15 @@ export async function saveUploadedPhoto(file: File): Promise<string> {
   const { error } = await supabaseAdmin.storage
     .from(DISH_PHOTOS_BUCKET)
     .upload(filename, bytes, { contentType: file.type, upsert: false });
-  if (error) throw new UploadError(error.message);
+  if (error) {
+    // Every other failure path in the admin panel surfaces a fixed Uzbek
+    // message; this was the one place that put the raw Supabase Storage SDK
+    // error (English, e.g. "The resource already exists" / "Payload too
+    // large") directly in front of the manager. Log the real reason for
+    // debugging and show the same friendly message the rest of the app uses.
+    console.error("Photo upload to storage failed:", error);
+    throw new UploadError("Rasmni yuklab bo'lmadi. Internet aloqasini tekshirib, qaytadan urinib ko'ring");
+  }
 
   const { data } = supabaseAdmin.storage.from(DISH_PHOTOS_BUCKET).getPublicUrl(filename);
   return data.publicUrl;

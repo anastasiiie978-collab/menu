@@ -229,6 +229,14 @@ export async function createCategory(input: CategoryInput): Promise<Category> {
 }
 
 export async function deleteCategory(id: string): Promise<boolean> {
+  // The confirmation dialog in the UI tells the manager that deleting a category
+  // also deletes its dishes, so make that true here rather than assuming the
+  // database enforces it via an ON DELETE CASCADE foreign key. If it doesn't,
+  // deleting a non-empty category would otherwise fail outright with an opaque
+  // foreign-key violation instead of doing what was promised.
+  const { error: dishesError } = await supabaseAdmin.from("dishes").delete().eq("category_id", id);
+  if (dishesError) throw dishesError;
+
   const { data, error } = await supabaseAdmin.from("categories").delete().eq("id", id).select("id");
   if (error) throw error;
   return (data?.length ?? 0) > 0;

@@ -36,6 +36,15 @@ export async function getClientFingerprint(): Promise<string> {
     headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     "unknown";
 
+  // On Vercel one of the headers above is always present, so this should be
+  // unreachable in production. If it ever fires, every caller with no IP header
+  // shares one rate-limit bucket — a single attacker could exhaust it and lock
+  // out the real admin too. Logging it turns a silent effectiveness downgrade
+  // into something that shows up in the Vercel function logs.
+  if (ip === "unknown") {
+    console.warn("Login rate limit: no client IP header present, using shared fallback bucket");
+  }
+
   const secret = process.env.SESSION_SECRET;
   if (!secret) throw new Error("SESSION_SECRET is not set");
   return createHmac("sha256", secret).update(ip).digest("hex");
