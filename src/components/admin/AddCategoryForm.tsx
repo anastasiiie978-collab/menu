@@ -14,17 +14,17 @@ export function AddCategoryForm() {
           placeholder="Yangi toifa nomi"
           required
           maxLength={100}
-          className="min-h-11 flex-1 rounded-md border border-panel-2 bg-surface px-3 text-sm text-cream outline-none focus:border-gold"
+          className="min-h-11 flex-1 rounded-md border border-field-border bg-surface px-3 text-sm text-cream outline-none focus:border-gold"
         />
         <button
           type="submit"
           disabled={pending}
-          className="min-h-11 shrink-0 rounded-md bg-gold px-4 font-heading text-xs tracking-wide text-canvas disabled:opacity-60"
+          className="min-h-11 shrink-0 rounded-md bg-gold px-4 font-heading text-xs tracking-wide text-on-gold disabled:opacity-60"
         >
           {pending ? "..." : "Qo'shish"}
         </button>
       </div>
-      {state?.error && <p className="text-sm text-red-400">{state.error}</p>}
+      {state?.error && <p className="text-sm text-danger">{state.error}</p>}
     </form>
   );
 }

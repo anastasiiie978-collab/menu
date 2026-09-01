@@ -23,7 +23,7 @@ export default function LandingPage() {
         <div className="mt-12 flex w-full flex-col gap-4">
           <Link
             href="/menu"
-            className="flex min-h-16 items-center justify-center gap-3 rounded-lg bg-gold px-6 font-heading text-base tracking-wide text-canvas transition-colors active:bg-gold-light"
+            className="flex min-h-16 items-center justify-center gap-3 rounded-lg bg-gold px-6 font-heading text-base tracking-wide text-on-gold transition-colors active:bg-gold-light"
           >
             <MenuBookIcon className="h-6 w-6 shrink-0" />
             Suhbat menyu

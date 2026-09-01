@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { verifyAdminSession } from "@/lib/auth";
 import { getCategories, getDishById } from "@/lib/dishes";
 import { DishForm } from "@/components/admin/DishForm";
 import { updateDishAction } from "@/app/admin/actions";
@@ -7,7 +10,13 @@ import { updateDishAction } from "@/app/admin/actions";
 // added since the last build.
 export const dynamic = "force-dynamic";
 
+export const metadata: Metadata = { robots: { index: false, follow: false } };
+
 export default async function EditDishPage(props: PageProps<"/admin/dashboard/[id]/edit">) {
+  // See the dashboard page: proxy.ts is a convenience redirect, not the only
+  // thing standing between this data and the internet.
+  if (!(await verifyAdminSession())) redirect("/admin");
+
   const { id } = await props.params;
   const [categories, dish] = await Promise.all([getCategories(), getDishById(id)]);
 
@@ -26,7 +35,7 @@ export default async function EditDishPage(props: PageProps<"/admin/dashboard/[i
           <p>Bu taom topilmadi — ehtimol uni boshqa qurilmada allaqachon o&apos;chirib yuborishgan.</p>
           <Link
             href="/admin/dashboard"
-            className="mt-4 flex min-h-11 items-center justify-center rounded-md bg-gold px-4 font-heading text-xs tracking-wide text-canvas"
+            className="mt-4 flex min-h-11 items-center justify-center rounded-md bg-gold px-4 font-heading text-xs tracking-wide text-on-gold"
           >
             Bosh sahifaga qaytish
           </Link>

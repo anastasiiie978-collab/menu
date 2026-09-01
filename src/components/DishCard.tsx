@@ -7,6 +7,14 @@ import { RevealOnScroll } from "@/components/RevealOnScroll";
 import { DishDetail } from "@/components/DishDetail";
 import type { Dish } from "@/lib/types";
 
+// A photo can also simply fail — Supabase can be slow enough that Next's image
+// optimizer times out, and a dish row can outlive the file it points at. The
+// original two-state loaded/not-loaded only cleared the shimmer on `onError`,
+// which left the browser's broken-image glyph sitting on the card. The design
+// spec's rule is "never a broken-image icon", so a failure now falls through to
+// the same themed placeholder a dish with no photo at all gets.
+type PhotoStatus = "loading" | "loaded" | "failed";
+
 export function DishCard({
   dish,
   categoryName,
@@ -19,8 +27,8 @@ export function DishCard({
   priority?: boolean;
 }) {
   const [detailOpen, setDetailOpen] = useState(false);
-  const [mobileLoaded, setMobileLoaded] = useState(false);
-  const [desktopLoaded, setDesktopLoaded] = useState(false);
+  const [mobileStatus, setMobileStatus] = useState<PhotoStatus>("loading");
+  const [desktopStatus, setDesktopStatus] = useState<PhotoStatus>("loading");
   // Returns focus to the card that opened the sheet once it closes, so
   // keyboard/screen-reader users land back where they were instead of at the
   // top of the page.
@@ -28,22 +36,24 @@ export function DishCard({
 
   const mobilePhoto = (
     <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-panel-2">
-      {dish.photoUrl ? (
+      {dish.photoUrl && mobileStatus !== "failed" ? (
         <>
-          {!mobileLoaded && <div aria-hidden="true" className="shimmer pointer-events-none" />}
+          {mobileStatus === "loading" && (
+            <div aria-hidden="true" className="shimmer pointer-events-none" />
+          )}
           <Image
             src={dish.photoUrl}
             alt=""
             fill
             preload={priority}
             sizes="80px"
-            onLoad={() => setMobileLoaded(true)}
-            onError={() => setMobileLoaded(true)}
+            onLoad={() => setMobileStatus("loaded")}
+            onError={() => setMobileStatus("failed")}
             className={`object-cover ${dish.soldOut ? "opacity-40 grayscale" : ""}`}
           />
         </>
       ) : (
-        <div className="flex h-full items-center justify-center text-muted-2">
+        <div className="flex h-full items-center justify-center text-on-panel">
           <span className="font-display text-[10px] italic">Tez orada</span>
         </div>
       )}
@@ -57,9 +67,11 @@ export function DishCard({
 
   const desktopPhoto = (
     <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-panel-2 sm:w-2/5">
-      {dish.photoUrl ? (
+      {dish.photoUrl && desktopStatus !== "failed" ? (
         <>
-          {!desktopLoaded && <div aria-hidden="true" className="shimmer pointer-events-none" />}
+          {desktopStatus === "loading" && (
+            <div aria-hidden="true" className="shimmer pointer-events-none" />
+          )}
           <Image
             src={dish.photoUrl}
             alt=""
@@ -70,13 +82,13 @@ export function DishCard({
             // where it's visible and above the fold), without forcing an eager/blocking fetch on mobile.
             fetchPriority={priority ? "high" : undefined}
             sizes="(min-width: 640px) 40vw, 100vw"
-            onLoad={() => setDesktopLoaded(true)}
-            onError={() => setDesktopLoaded(true)}
+            onLoad={() => setDesktopStatus("loaded")}
+            onError={() => setDesktopStatus("failed")}
             className={`object-cover ${dish.soldOut ? "opacity-40 grayscale" : ""}`}
           />
         </>
       ) : (
-        <div className="flex h-full items-center justify-center text-muted-2">
+        <div className="flex h-full items-center justify-center text-on-panel">
           <span className="font-display text-sm italic">Rasm tez orada</span>
         </div>
       )}

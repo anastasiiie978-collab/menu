@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Suhbat — milliy taomnoma
 
-## Getting Started
+QR-code menu for the Suhbat restaurant. A printed table tent links here; scanning it
+opens a two-choice landing screen (Instagram or the full menu), and the manager
+edits dishes, categories and the site's background colour from a password-protected
+admin panel.
 
-First, run the development server:
+Next.js 16 (App Router) · TypeScript · Tailwind v4 · Supabase (Postgres + Storage).
+
+## Running it
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install && npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Copy `.env.example` to `.env.local` and fill it in first — **read the comments in
+that file**, particularly the one about escaping `$` in `ADMIN_PASSWORD_HASH`. The
+escaping is required in `.env.local` and wrong in a hosting provider's
+environment-variable UI, and getting it backwards rejects the correct password with
+"Noto'g'ri parol" in production while everything still works locally.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Script | What it does |
+| --- | --- |
+| `npm run dev` | Dev server |
+| `npm run build` | Production build |
+| `npm run check:contrast` | Verifies all five themes against WCAG 2.2 AA (see below) |
+| `npm run lint` | ESLint |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Layout
 
-## Learn More
+```
+src/app/            routes — / landing, /menu public menu, /admin* panel
+src/app/admin/actions.ts   every mutation, each re-checking the session
+src/lib/themes.ts   the five palettes, and every colour the UI uses
+src/lib/dishes.ts   Supabase reads and writes
+src/lib/upload.ts   photo validation (magic bytes, not just MIME) and cleanup
+src/proxy.ts        login/logout redirects — a convenience, not the auth boundary
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Backgrounds
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The admin panel's **Menyu foni** section switches the whole site — landing screen,
+public menu and panel — between five palettes: `Ko'mir` (charcoal, the default),
+`Tandir` (warm brown), `Samarqand` (indigo), `Anor` (deep pomegranate) and `Qog'oz`
+(ivory, for reading in daylight).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+A theme is not just a background colour. Each one in `src/lib/themes.ts` carries the
+full token set — text, borders, accents, error colours — because a background is
+only usable with text that stays readable on it. `npm run check:contrast` checks
+every foreground/background pair the UI actually renders against WCAG 2.2 AA and
+exits non-zero on a failure, so a future tweak to a hex value cannot quietly ship a
+theme where the prices are unreadable. **Run it after touching any colour.**
 
-## Deploy on Vercel
+The choice is stored server-side in a private Supabase Storage bucket
+(`site-config/theme.json`), so it applies to every customer rather than to one
+browser. The bucket is created automatically on the first save — no setup step. If
+it can't be read, every page falls back to `Ko'mir` rather than failing.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Notes for whoever works on this next
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Every admin page and action verifies the session itself.** `src/proxy.ts` only
+  handles redirects. Don't move authorization into it.
+- **Only the service-role key writes.** `src/lib/supabaseClient.ts` is `server-only`
+  and no Supabase key is exposed to the browser (none are `NEXT_PUBLIC_`). Row-level
+  security is on: the anon key can read `categories`/`dishes` and nothing else.
+- **Server Action bodies are capped at 6 MB** (`next.config.ts`) so 5 MB photo
+  uploads fit. Next's default is 1 MB, which silently rejects most phone photos.
+- **The Content-Security-Policy relaxes only in development**, where React's dev
+  build needs `eval` and hot reload needs a websocket. Don't copy those into the
+  production branch.
+- Deleting a dish or category also deletes its photos from storage. If you add
+  another path that drops a dish row, call `deleteUploadedPhoto` alongside it.

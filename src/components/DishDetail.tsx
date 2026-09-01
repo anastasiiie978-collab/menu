@@ -17,7 +17,9 @@ export function DishDetail({
   const rootRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const [photoLoaded, setPhotoLoaded] = useState(false);
+  // See DishCard: a photo that fails to load falls back to the themed placeholder
+  // rather than leaving a broken-image glyph in the middle of the sheet.
+  const [photoStatus, setPhotoStatus] = useState<"loading" | "loaded" | "failed">("loading");
 
   // The sheet is rendered inline in the tree (not a portal), so the menu list
   // behind it shares ancestors with it. A sighted user can't reach that list —
@@ -53,16 +55,29 @@ export function DishDetail({
     };
   }, []);
 
+  // Kept in a ref so the effect below can depend on nothing at all. DishCard passes
+  // `onClose` as an inline arrow, so it is a new function on every one of its
+  // renders — and it re-renders whenever a dish photo finishes loading. With
+  // `[onClose]` as the dependency list, a photo that landed *after* the sheet was
+  // opened re-ran the effect and pushed a second history entry: the first back
+  // press then closed the sheet as intended, and the second did nothing visible
+  // because both entries share the menu's URL. Easy to miss on a fast connection
+  // and easy to hit on the slow mobile ones this menu is mostly read over.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
   // Every close path routes through history.back(), and popstate is the single
   // place that actually tears the sheet down. That keeps the Android hardware
   // back button (the way most people will dismiss this) and the X button on
   // exactly the same code path, so the history stack can't drift out of sync.
   useEffect(() => {
     window.history.pushState({ suhbatDishSheet: true }, "");
-    const onPopState = () => onClose();
+    const onPopState = () => onCloseRef.current();
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [onClose]);
+  }, []);
 
   const requestClose = () => window.history.back();
 
@@ -135,21 +150,23 @@ export function DishDetail({
       >
         <div className="relative">
           <div className="relative aspect-[4/3] w-full bg-panel-2">
-            {dish.photoUrl ? (
+            {dish.photoUrl && photoStatus !== "failed" ? (
               <>
-                {!photoLoaded && <div aria-hidden="true" className="shimmer pointer-events-none" />}
+                {photoStatus === "loading" && (
+                  <div aria-hidden="true" className="shimmer pointer-events-none" />
+                )}
                 <Image
                   src={dish.photoUrl}
                   alt={dish.name}
                   fill
                   sizes="(min-width: 640px) 512px, 100vw"
-                  onLoad={() => setPhotoLoaded(true)}
-                  onError={() => setPhotoLoaded(true)}
+                  onLoad={() => setPhotoStatus("loaded")}
+                  onError={() => setPhotoStatus("failed")}
                   className={`object-cover ${dish.soldOut ? "opacity-45 grayscale" : ""}`}
                 />
               </>
             ) : (
-              <div className="flex h-full items-center justify-center text-muted-2">
+              <div className="flex h-full items-center justify-center text-on-panel">
                 <span className="font-display text-lg italic">Rasm tez orada</span>
               </div>
             )}

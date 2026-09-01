@@ -32,7 +32,7 @@ export default function AdminError({
       <button
         type="button"
         onClick={reset}
-        className="mt-8 flex min-h-14 w-full items-center justify-center rounded-lg bg-gold px-6 font-heading text-base tracking-wide text-canvas"
+        className="mt-8 flex min-h-14 w-full items-center justify-center rounded-lg bg-gold px-6 font-heading text-base tracking-wide text-on-gold"
       >
         Qaytadan urinish
       </button>

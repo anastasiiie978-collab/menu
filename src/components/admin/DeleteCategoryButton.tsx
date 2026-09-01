@@ -36,7 +36,7 @@ export function DeleteCategoryButton({
       <button
         type="submit"
         disabled={pending}
-        className="min-h-11 shrink-0 rounded-md border border-panel-2 px-3 text-xs text-red-400 disabled:opacity-60"
+        className="min-h-11 shrink-0 rounded-md border border-panel-2 px-3 text-xs text-danger disabled:opacity-60"
       >
         {pending ? "..." : "O'chirish"}
       </button>

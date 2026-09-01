@@ -24,7 +24,7 @@ export function DeleteDishButton({ dishId, dishName }: { dishId: string; dishNam
       <button
         type="submit"
         disabled={pending}
-        className="min-h-11 min-w-11 rounded-md border border-panel-2 px-3 text-sm text-red-400 disabled:opacity-60"
+        className="min-h-11 min-w-11 rounded-md border border-panel-2 px-3 text-sm text-danger disabled:opacity-60"
       >
         {pending ? "..." : "O'chirish"}
       </button>

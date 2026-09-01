@@ -29,7 +29,7 @@ export function DishForm({
           defaultValue={dish?.name}
           required
           maxLength={100}
-          className="min-h-14 rounded-lg border border-panel-2 bg-surface px-4 text-base text-cream outline-none focus:border-gold"
+          className="min-h-14 rounded-lg border border-field-border bg-surface px-4 text-base text-cream outline-none focus:border-gold"
         />
       </label>
 
@@ -40,7 +40,7 @@ export function DishForm({
           defaultValue={dish?.description}
           rows={2}
           maxLength={500}
-          className="rounded-lg border border-panel-2 bg-surface px-4 py-3 text-base text-cream outline-none focus:border-gold"
+          className="rounded-lg border border-field-border bg-surface px-4 py-3 text-base text-cream outline-none focus:border-gold"
         />
       </label>
 
@@ -50,7 +50,7 @@ export function DishForm({
           name="categoryId"
           defaultValue={dish?.categoryId ?? categories[0]?.id}
           required
-          className="min-h-14 rounded-lg border border-panel-2 bg-surface px-4 text-base text-cream outline-none focus:border-gold"
+          className="min-h-14 rounded-lg border border-field-border bg-surface px-4 text-base text-cream outline-none focus:border-gold"
         >
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
@@ -71,7 +71,7 @@ export function DishForm({
             step={1}
             defaultValue={dish?.price}
             required
-            className="min-h-14 rounded-lg border border-panel-2 bg-surface px-4 text-base text-cream outline-none focus:border-gold"
+            className="min-h-14 rounded-lg border border-field-border bg-surface px-4 text-base text-cream outline-none focus:border-gold"
           />
         </label>
         <label className="flex flex-1 flex-col gap-2">
@@ -80,7 +80,7 @@ export function DishForm({
             name="priceUnit"
             placeholder="masalan: 1 sixga"
             defaultValue={dish?.priceUnit ?? ""}
-            className="min-h-14 rounded-lg border border-panel-2 bg-surface px-4 text-base text-cream outline-none focus:border-gold"
+            className="min-h-14 rounded-lg border border-field-border bg-surface px-4 text-base text-cream outline-none focus:border-gold"
           />
         </label>
       </div>
@@ -106,12 +106,12 @@ export function DishForm({
         />
       </label>
 
-      {state?.error && <p className="text-sm text-red-400">{state.error}</p>}
+      {state?.error && <p className="text-sm text-danger">{state.error}</p>}
 
       <button
         type="submit"
         disabled={pending}
-        className="min-h-14 rounded-lg bg-gold px-6 font-heading text-base tracking-wide text-canvas transition-opacity disabled:opacity-60"
+        className="min-h-14 rounded-lg bg-gold px-6 font-heading text-base tracking-wide text-on-gold transition-opacity disabled:opacity-60"
       >
         {pending ? "Saqlanmoqda..." : submitLabel}
       </button>

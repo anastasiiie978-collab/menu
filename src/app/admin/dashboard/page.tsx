@@ -1,18 +1,43 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { verifyAdminSession } from "@/lib/auth";
 import { getMenu } from "@/lib/dishes";
+import { getActiveThemeId } from "@/lib/siteSettings";
+import { actionErrorMessage } from "@/lib/actionErrors";
 import { formatSom } from "@/lib/format";
 import { logoutAction, toggleSoldOutAction } from "@/app/admin/actions";
 import { DeleteDishButton } from "@/components/admin/DeleteDishButton";
 import { AddCategoryForm } from "@/components/admin/AddCategoryForm";
 import { DeleteCategoryButton } from "@/components/admin/DeleteCategoryButton";
+import { ThemePicker } from "@/components/admin/ThemePicker";
 
 export const dynamic = "force-dynamic";
 
+// The admin panel is linked from the public landing page, so a crawler can walk
+// straight into it. Nothing sensitive renders without a session, but there is no
+// reason for "Suhbat admin panel" to be a search result the staff have to explain.
+export const metadata: Metadata = {
+  title: "Admin panel — Suhbat",
+  robots: { index: false, follow: false },
+};
+
 export default async function AdminDashboardPage(props: PageProps<"/admin/dashboard">) {
-  const { categories, dishes } = await getMenu();
-  const { error } = await props.searchParams;
-  const errorMessage = Array.isArray(error) ? error[0] : error;
+  // Checked here as well as in proxy.ts. Next's own guidance is that proxy runs
+  // "before routes are rendered" and is not the place to hold authorization on its
+  // own — it can be deployed to a CDN, its matcher is one edit away from missing a
+  // path, and framework-level bypasses of exactly this pattern have shipped before
+  // (CVE-2025-29927). This page reads from the database, so the check belongs next
+  // to the read. The mutations already do this.
+  if (!(await verifyAdminSession())) redirect("/admin");
+
+  const [{ categories, dishes }, activeThemeId, { error }] = await Promise.all([
+    getMenu(),
+    getActiveThemeId(),
+    props.searchParams,
+  ]);
+  const errorMessage = actionErrorMessage(error);
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-8 sm:px-6">
@@ -42,21 +67,23 @@ export default async function AdminDashboardPage(props: PageProps<"/admin/dashbo
       </div>
 
       {errorMessage && (
-        <div className="mt-4 flex items-start justify-between gap-3 rounded-lg border border-red-400/40 bg-red-400/10 px-4 py-3 text-sm text-red-400">
+        <div className="mt-4 flex items-start justify-between gap-3 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
           <p>{errorMessage}</p>
           {/* Plain link back to the clean URL — the error lives in ?error= from the
               redirect after a failed action, so without this it keeps showing on
               every reload/re-visit until the manager happens to navigate away. */}
           <Link
             href="/admin/dashboard"
-            className="flex min-h-11 shrink-0 items-center px-1 text-xs text-red-300 underline underline-offset-4"
+            className="flex min-h-11 shrink-0 items-center px-1 text-xs text-danger-soft underline underline-offset-4"
           >
             Yopish
           </Link>
         </div>
       )}
 
-      <section className="mt-8 rounded-lg border border-panel-2 bg-surface p-4">
+      <ThemePicker activeThemeId={activeThemeId} />
+
+      <section className="mt-6 rounded-lg border border-panel-2 bg-surface p-4">
         <h2 className="mb-3 font-heading text-sm tracking-wide text-cream">Toifalar</h2>
         <div className="flex flex-col gap-2">
           {categories.map((category) => {
@@ -86,7 +113,7 @@ export default async function AdminDashboardPage(props: PageProps<"/admin/dashbo
 
       <Link
         href="/admin/dashboard/new"
-        className="mt-6 flex min-h-14 items-center justify-center rounded-lg bg-gold px-6 font-heading text-sm tracking-wide text-canvas"
+        className="mt-6 flex min-h-14 items-center justify-center rounded-lg bg-gold px-6 font-heading text-sm tracking-wide text-on-gold"
       >
         + Yangi taom qo&apos;shish
       </Link>
