@@ -15,7 +15,11 @@ function requireEnv(name: "SUPABASE_URL" | "SUPABASE_ANON_KEY" | "SUPABASE_SERVI
   return value;
 }
 
-const url = requireEnv("SUPABASE_URL");
+// Exported so callers that need to recognise this project's own storage URLs
+// (upload.ts, when deciding whether a photo URL is one of ours) share the same
+// value instead of re-reading the environment and drifting from it.
+export const supabaseUrl = requireEnv("SUPABASE_URL");
+const url = supabaseUrl;
 
 export const DISH_PHOTOS_BUCKET = "dish-photos";
 

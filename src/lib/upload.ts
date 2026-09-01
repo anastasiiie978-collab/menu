@@ -1,5 +1,5 @@
 import "server-only";
-import { supabaseAdmin, DISH_PHOTOS_BUCKET } from "@/lib/supabaseClient";
+import { supabaseAdmin, supabaseUrl, DISH_PHOTOS_BUCKET } from "@/lib/supabaseClient";
 
 const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES: Record<string, string> = {
@@ -61,4 +61,44 @@ export async function saveUploadedPhoto(file: File): Promise<string> {
 
   const { data } = supabaseAdmin.storage.from(DISH_PHOTOS_BUCKET).getPublicUrl(filename);
   return data.publicUrl;
+}
+
+/**
+ * Removes a dish photo from the storage bucket.
+ *
+ * Nothing used to call anything like this: deleting a dish deleted its row and
+ * left the JPEG in the bucket forever, and replacing a photo orphaned the old one
+ * the same way. On a menu that gets re-photographed a few times a year that is a
+ * bucket which only ever grows, and Supabase bills for it.
+ *
+ * `photoUrl` is whatever is stored on the dish row, so it is treated as untrusted
+ * shape rather than assumed: anything that is not a public URL for this project's
+ * own bucket is ignored rather than turned into a delete. Callers invoke this
+ * *after* the database row is gone, and a failure here is logged, not thrown —
+ * an orphaned file is untidy, a delete that reports failure after already
+ * succeeding is worse.
+ */
+export async function deleteUploadedPhoto(photoUrl: string | null | undefined): Promise<void> {
+  if (!photoUrl) return;
+
+  const marker = `/storage/v1/object/public/${DISH_PHOTOS_BUCKET}/`;
+  let objectPath: string;
+  try {
+    const url = new URL(photoUrl);
+    // Same-project check. A dish that still carries a legacy `/uploads/dishes/…`
+    // path from before the Supabase migration must not be interpreted as a
+    // bucket key.
+    if (url.hostname !== new URL(supabaseUrl).hostname) return;
+    if (!url.pathname.startsWith(marker)) return;
+    objectPath = decodeURIComponent(url.pathname.slice(marker.length));
+  } catch {
+    return;
+  }
+
+  if (!objectPath || objectPath.includes("..")) return;
+
+  const { error } = await supabaseAdmin.storage.from(DISH_PHOTOS_BUCKET).remove([objectPath]);
+  if (error) {
+    console.error(`Could not remove orphaned photo "${objectPath}" from storage:`, error);
+  }
 }

@@ -136,10 +136,22 @@ export async function updateDish(id: string, patch: DishUpdate): Promise<Dish | 
   return data ? toDish(data as DishRow) : null;
 }
 
-export async function deleteDish(id: string): Promise<boolean> {
-  const { data, error } = await supabaseAdmin.from("dishes").delete().eq("id", id).select("id");
+// Returns the deleted row's photo so the caller can clear it out of storage.
+// Reading it back from the DELETE rather than with a separate SELECT first keeps
+// this a single round trip and, more importantly, means the URL returned is the
+// one that was actually deleted — not one that a concurrent edit had already
+// replaced between the two queries.
+export async function deleteDish(
+  id: string
+): Promise<{ deleted: boolean; photoUrl: string | null }> {
+  const { data, error } = await supabaseAdmin
+    .from("dishes")
+    .delete()
+    .eq("id", id)
+    .select("id, photo_url");
   if (error) throw error;
-  return (data?.length ?? 0) > 0;
+  const row = data?.[0] as { photo_url: string | null } | undefined;
+  return { deleted: Boolean(row), photoUrl: row?.photo_url ?? null };
 }
 
 export type CategoryInput = { name: string };
@@ -228,16 +240,30 @@ export async function createCategory(input: CategoryInput): Promise<Category> {
   return toCategory(data as CategoryRow);
 }
 
-export async function deleteCategory(id: string): Promise<boolean> {
+export async function deleteCategory(
+  id: string
+): Promise<{ deleted: boolean; photoUrls: string[] }> {
   // The confirmation dialog in the UI tells the manager that deleting a category
   // also deletes its dishes, so make that true here rather than assuming the
   // database enforces it via an ON DELETE CASCADE foreign key. If it doesn't,
   // deleting a non-empty category would otherwise fail outright with an opaque
   // foreign-key violation instead of doing what was promised.
-  const { error: dishesError } = await supabaseAdmin.from("dishes").delete().eq("category_id", id);
+  const { data: removedDishes, error: dishesError } = await supabaseAdmin
+    .from("dishes")
+    .delete()
+    .eq("category_id", id)
+    .select("photo_url");
   if (dishesError) throw dishesError;
 
   const { data, error } = await supabaseAdmin.from("categories").delete().eq("id", id).select("id");
   if (error) throw error;
-  return (data?.length ?? 0) > 0;
+
+  // Every photo that belonged to a dish in this category, so the caller can take
+  // them out of the bucket too. Deleting four dishes used to leave four JPEGs
+  // behind with nothing left pointing at them.
+  const photoUrls = ((removedDishes ?? []) as { photo_url: string | null }[])
+    .map((row) => row.photo_url)
+    .filter((url): url is string => Boolean(url));
+
+  return { deleted: (data?.length ?? 0) > 0, photoUrls };
 }
