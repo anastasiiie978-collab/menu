@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# dish photos now live in Supabase Storage; local copies are only migration source
+/public/uploads
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -21,6 +21,14 @@ export default function LandingPage() {
         </p>
 
         <div className="mt-12 flex w-full flex-col gap-4">
+          <Link
+            href="/menu"
+            className="flex min-h-16 items-center justify-center gap-3 rounded-lg bg-gold px-6 font-heading text-base tracking-wide text-on-gold transition-colors active:bg-gold-light"
+          >
+            <MenuBookIcon className="h-6 w-6 shrink-0" />
+            Suhbat menyu
+          </Link>
+
           <a
             href={INSTAGRAM_URL}
             target="_blank"
@@ -30,19 +38,18 @@ export default function LandingPage() {
             <InstagramIcon className="h-6 w-6 shrink-0 text-gold" />
             Instagram
           </a>
-
-          <Link
-            href="/menu"
-            className="flex min-h-16 items-center justify-center gap-3 rounded-lg bg-gold px-6 font-heading text-base tracking-wide text-canvas transition-colors active:bg-gold-light"
-          >
-            <MenuBookIcon className="h-6 w-6 shrink-0" />
-            Suhbat menyu
-          </Link>
         </div>
 
         <p className="mt-10 font-body text-xs tracking-wide text-muted-2">
           @suhbat_milliytaomlar
         </p>
+
+        <Link
+          href="/admin"
+          className="mt-2 flex min-h-11 items-center px-4 font-heading text-xs tracking-[0.25em] text-muted-2 transition-colors active:text-gold"
+        >
+          ADMIN
+        </Link>
       </div>
     </main>
   );

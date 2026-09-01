@@ -1,21 +1,51 @@
 @import "tailwindcss";
 
+/* These are the "Ko'mir" values from src/lib/themes.ts, and they are what makes
+   `bg-canvas`, `text-muted-2`, `border-field-border` and friends exist as
+   utilities at all — Tailwind only generates a utility for a token it can see at
+   build time. They are not the source of truth for what the site *looks* like:
+   the root layout re-declares every one of them at request time for whichever
+   theme the manager has selected, under a `:root[data-theme="…"]` selector that
+   outranks the `:root` rule Tailwind emits here. Changing a value in this block
+   without changing themes.ts only affects the split second before hydration on a
+   page that somehow rendered with no `data-theme` at all. */
 @theme {
   --color-canvas: #121212;
   --color-surface: #1a1a1a;
   --color-panel: #2c2c2c;
   --color-panel-2: #3a3a3a;
+  /* Form fields only. WCAG 1.4.11 wants 3:1 for the outline of a control, and a
+     text input has no label-shaped silhouette to fall back on the way a button
+     does — the border is the only thing saying "type here". `panel-2` stays the
+     softer, decorative outline for cards and photo frames. */
+  --color-field-border: #6a6760;
   --color-gold: #c8a24a;
   --color-gold-light: #e0c485;
   --color-cream: #f2ede4;
   --color-muted: #9a938a;
-  --color-muted-2: #807a72;
+  /* Nudged up from #807a72, which measured 4.41:1 on the canvas — just under
+     WCAG AA's 4.5:1. Raised again from #857f76, which cleared the canvas at
+     4.72:1 but only reached 4.39:1 on `surface`, where the dish-detail sheet
+     actually puts it. scripts/check-contrast.mjs now checks both. */
+  --color-muted-2: #8a847a;
+  /* Text that sits on a `gold` fill. Every primary button used `text-on-gold` for
+     this, which is only correct while the canvas happens to be near-black — on
+     the ivory theme it would have put cream text on gold at 2:1. */
+  --color-on-gold: #121212;
+  /* Text on a `panel-2` fill: the "Rasm tez orada" placeholder tiles. `muted-2`
+     was managing 2.9:1 there. */
+  --color-on-panel: #c8c2b8;
+  /* Was a hard-coded `red-400`/`red-300`, which is tuned for a dark background
+     and drops to roughly 3:1 on the ivory theme. */
+  --color-danger: #f28b82;
+  --color-danger-soft: #e9a49d;
 
   --font-heading: var(--font-oswald);
   --font-body: var(--font-jost);
   --font-display: var(--font-cormorant);
 
   --animate-reveal: reveal 0.7s ease-out forwards;
+  --animate-sheet-in: sheet-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 
   @keyframes reveal {
     from {
@@ -27,6 +57,26 @@
       transform: translateY(0);
     }
   }
+
+  /* Dish detail sheet: rises from below like a native sheet rather than
+     appearing abruptly. Overridden by the reduced-motion block below. */
+  @keyframes sheet-in {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+:root {
+  /* Not a `--color-*` token: it is consumed as an "R G B" triple so the sweep can
+     carry its own alpha, and Tailwind would try to build utilities from it. */
+  --shimmer-rgb: 242 237 228;
+  color-scheme: dark;
 }
 
 body {
@@ -35,8 +85,58 @@ body {
   font-family: var(--font-body), sans-serif;
 }
 
+/* Category nav pills link to in-page anchors (#slug); without this they jump
+   instantly while the "back to top" button scrolls smoothly, which reads as
+   inconsistent. Gated on the user's motion preference like everything else here. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Visible keyboard-focus ring in the site's gold accent. The dark theme has no
+   custom focus style anywhere, so keyboard/switch-device users only get the
+   browser default (inconsistent across browsers, sometimes low-contrast on
+   near-black surfaces). This only triggers on :focus-visible, so mouse/touch
+   taps are unaffected. */
+:focus-visible {
+  outline: 2px solid var(--color-gold-light);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
 .reveal-hidden {
   opacity: 0;
+}
+
+/* Gradient sweep shown behind a dish photo while it streams in — helps on the
+   slow Uzbek mobile connections this menu is mostly viewed over. The photo
+   container already has `position: relative`, so this just needs to be
+   absolutely positioned inside it. Callers remove this element from the DOM
+   once the image's onLoad/onError fires, so it never animates longer than the
+   fetch actually takes. */
+.shimmer {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgb(var(--shimmer-rgb) / 0.1) 45%,
+    rgb(var(--shimmer-rgb) / 0.16) 50%,
+    rgb(var(--shimmer-rgb) / 0.1) 55%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-sweep 1.6s ease-in-out infinite;
+}
+
+@keyframes shimmer-sweep {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
